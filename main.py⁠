@@ -7,6 +7,27 @@ async def my_command(interaction: discord.Interaction):
     
     # 最後に結果を送る
     await interaction.followup.send("完了しました！", ephemeral=True)
+import discord
+from discord.ext import commands
+import os
+
+# --- 1. まずここで bot を作らないとダメです ---
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# --- 2. 次にコマンドを登録 ---
+@bot.tree.command(name="コマンド名", description="説明")
+async def my_command(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    await interaction.followup.send("完了しました！", ephemeral=True)
+
+# --- 3. 最後に起動 ---
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print("Botがログインしました！")
+
+bot.run(os.environ["TOKEN"])
 
 
 async def コマンド名(interaction: discord.Interaction):

@@ -1,3 +1,28 @@
+
+# 1. 必要なものを読み込む
+import discord
+from discord.ext import commands
+import os
+
+# 2. 【最重要】ここでbot本体を作る（これがエラーの原因でした）
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# 3. そのあとにコマンドを作る
+@bot.tree.command(name="コマンド名", description="説明")
+async def my_command(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    await interaction.followup.send("完了しました！", ephemeral=True)
+
+# 4. 最後に起動する
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print("Botがログインしました！")
+
+bot.run(os.environ["TOKEN"])
+
+
 @bot.tree.command(name="コマンド名", description="説明")
 async def my_command(interaction: discord.Interaction):
     # 【最重要】ここを一番最初に書く！

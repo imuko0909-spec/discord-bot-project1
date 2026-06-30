@@ -107,4 +107,9 @@ async def create_room(interaction: discord.Interaction):
     # コマンド実行者に通知
     await interaction.response.send_message(f"個室を作成しました: {new_channel.mention}", ephemeral=True)
 
+@bot.event
+async def on_ready():
+    # 全てのコマンドを明示的に同期
+    await bot.tree.sync()
+    print(f"--- コマンド同期完了: {bot.user} ---")
 

@@ -3,18 +3,15 @@ from discord.ext import commands
 import os
 import asyncio
 
-# 1. 共通の設定
-intents = discord.Intents.all()
+# インテントの設定
+intents = discord.Intents.default()
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# 自分のIDをここに設定してください
-MY_USER_ID = 1232865763094827112
-# 個室の受付チャンネルID
-ENTRY_CHANNEL_ID=1521453980268498974
-
-# --- 個室機能用 ---
+# 個室のタイマー管理用
 rooms = {}
 
+# 延長ボタンのクラス
 class ExtendButton(discord.ui.View):
     def __init__(self, channel):
         super().__init__(timeout=None)
@@ -25,91 +22,44 @@ class ExtendButton(discord.ui.View):
         rooms[self.channel.id] += 600
         await interaction.response.send_message("10分延長しました！", ephemeral=True)
 
+# タイマー管理関数
 async def manage_room_timer(channel):
-    while rooms.get(channel.id, 0) > 0:
+    while channel.id in rooms:
         await asyncio.sleep(60)
         rooms[channel.id] -= 60
         if rooms[channel.id] <= 0:
-            await channel.send("時間終了です。部屋を削除します。")
-            await channel.delete()
-            del rooms[channel.id]
+            try:
+                await channel.delete()
+            except:
+                pass
+            if channel.id in rooms:
+                del rooms[channel.id]
             break
 
-# --- マイリスト機能用 ---
-class ActionView(discord.ui.View):
-    def __init__(self, target_member):
-        super().__init__(timeout=60)
-        self.target = target_member
-
-    @discord.ui.button(label="❤️ お気に入り追加", style=discord.ButtonStyle.green)
-    async def add_fav(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"{self.target.name} をお気に入りに入れました。", ephemeral=True)
-
-    @discord.ui.button(label="🚫 BL追加", style=discord.ButtonStyle.danger)
-    async def add_bl(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"{self.target.name} をブラックリストに入れました。", ephemeral=True)
-
-class SelectMemberView(discord.ui.View):
-    def __init__(self, guild):
-        super().__init__(timeout=60)
-        options = [discord.SelectOption(label=m.name, value=str(m.id)) for m in guild.members if not m.bot][:25]
-        self.add_item(self.MemberSelect(options))
-
-    class MemberSelect(discord.ui.Select):
-        def __init__(self, options):
-            super().__init__(placeholder="メンバーを選択...", options=options)
-        async def callback(self, interaction: discord.Interaction):
-            target = interaction.guild.get_member(int(self.values[0]))
-            await interaction.response.send_message(f"{target.name} を選択しました。", view=ActionView(target), ephemeral=True)
-
-# --- イベントとコマンド ---
+# 起動時のログ
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
-    print("Botがログインしました！")
+    print(f"ログイン完了: {bot.user}")
+    print("Botは現在 !mylist と !vc_up を待機中です")
 
-@bot.event
-async def on_voice_state_update(member, before, after):
-    if after.channel and after.channel.id == ENTRY_CHANNEL_ID:
-        new_channel = await after.channel.guild.create_voice_channel(name=f"{member.name}の個室")
-        await member.move_to(new_channel)
-        rooms[new_channel.id] = 600
-        await new_channel.send("個室へようこそ！", view=ExtendButton(new_channel))
-        bot.loop.create_task(manage_room_timer(new_channel))
-    if before.channel and before.channel.id in rooms and len(before.channel.members) == 0:
-        await before.channel.delete()
+# コマンド：マイリスト
+@bot.command(name="mylist")
+async def mylist(ctx):
+    await ctx.send("ここはマイリストです。")
 
-@bot.tree.command(name="mylist", description="マイリスト管理")
-async def mylist(interaction: discord.Interaction):
-    if interaction.user.id != MY_USER_ID: return
-    await interaction.response.send_message("メンバー選択：", view=SelectMemberView(interaction.guild), ephemeral=True)
-
-bot.run(os.environ["TOKEN"])
-
-#
-
-@bot.tree.command(name="create_room", description="個室を新しく作成します")
-async def create_room(interaction: discord.Interaction):
-    # ユーザーが今いるチャンネルのカテゴリを取得（あれば）
-    category = interaction.user.voice.channel.category if interaction.user.voice and interaction.user.voice.channel else None
-    
-    # 個室を作成
-    new_channel = await interaction.guild.create_voice_channel(
-        name=f"{interaction.user.name}の個室",
+# コマンド：!vc_up で個室作成
+@bot.command(name="vc_up")
+async def vc_up(ctx):
+    category = ctx.author.voice.channel.category if ctx.author.voice and ctx.author.voice.channel else None
+    new_channel = await ctx.guild.create_voice_channel(
+        name=f"{ctx.author.name}の個室",
         category=category
     )
-    
-    # タイマー開始と延長ボタンの送信
     rooms[new_channel.id] = 600
     await new_channel.send("個室へようこそ！", view=ExtendButton(new_channel))
     bot.loop.create_task(manage_room_timer(new_channel))
-    
-    # コマンド実行者に通知
-    await interaction.response.send_message(f"個室を作成しました: {new_channel.mention}", ephemeral=True)
+    await ctx.send(f"個室を作成しました: {new_channel.mention}")
 
-@bot.event
-async def on_ready():
-    # 全てのコマンドを明示的に同期
-    await bot.tree.sync()
-    print(f"--- コマンド同期完了: {bot.user} ---")
-
+# Bot起動
+token = os.environ.get("TOKEN")
+bot.run(token)

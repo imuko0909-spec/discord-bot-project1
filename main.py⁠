@@ -1,3 +1,12 @@
+@bot.tree.command(name="コマンド名", description="説明")
+async def my_command(interaction: discord.Interaction):
+    # 【最重要】ここを一番最初に書く！
+    await interaction.response.defer(ephemeral=True) 
+
+    # --- ここで実際の処理（チャンネル作成など）をする ---
+    
+    # 最後に結果を送る
+    await interaction.followup.send("完了しました！", ephemeral=True)
 
 
 async def コマンド名(interaction: discord.Interaction):

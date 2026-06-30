@@ -18,6 +18,15 @@ async def on_ready():
 token = os.environ.get("TOKEN")
 bot.run(token)
 
+async def callback(self, interaction):
+    # 1. まず「受信しました！」と即座に伝える（これでエラーが出なくなる）
+    await interaction.response.defer(ephemeral=True) 
+    
+    # 2. ここで重い処理（DB操作やチャンネル作成など）をする
+    # ここに時間がかかっても、もうエラーにはなりません
+    
+    # 3. 結果を送る時は send ではなく followup.send を使う
+    await interaction.followup.send("完了しました！", ephemeral=True)
 
 
 

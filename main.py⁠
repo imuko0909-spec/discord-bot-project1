@@ -1,3 +1,25 @@
+import discord
+from discord.ext import commands
+import os
+
+# --- 最初にbotを作る ---
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# --- 次にコマンドを書く ---
+@bot.tree.command(name="コマンド名", description="説明")
+async def my_command(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    await interaction.followup.send("完了しました！", ephemeral=True)
+
+# --- 最後に起動する ---
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print("Botがログインしました！")
+
+# TOKENはRenderのEnvironment Variablesで設定している前提です
+bot.run(os.environ["TOKEN"])
 
 # 1. 必要なものを読み込む
 import discord

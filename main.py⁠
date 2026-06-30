@@ -1,3 +1,16 @@
+
+
+async def コマンド名(interaction: discord.Interaction):
+    # ★これが解決の鍵です！
+    await interaction.response.defer(ephemeral=True) 
+
+    # --- ここにこれまで通りの処理を書いてください ---
+    # （個室作成やDB操作など）
+
+    # ★結果を出す時は follow up を使います
+    await interaction.followup.send("完了しました！", ephemeral=True)
+
+
 import discord
 from discord.ext import commands
 import os

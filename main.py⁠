@@ -85,12 +85,26 @@ async def mylist(interaction: discord.Interaction):
     await interaction.response.send_message("メンバー選択：", view=SelectMemberView(interaction.guild), ephemeral=True)
 
 bot.run(os.environ["TOKEN"])
+
+#
+
 @bot.tree.command(name="create_room", description="個室を新しく作成します")
 async def create_room(interaction: discord.Interaction):
+    # ユーザーが今いるチャンネルのカテゴリを取得（あれば）
     category = interaction.user.voice.channel.category if interaction.user.voice and interaction.user.voice.channel else None
-    new_channel = await interaction.guild.create_voice_channel(name=f"{interaction.user.name}の個室", category=category)
+    
+    # 個室を作成
+    new_channel = await interaction.guild.create_voice_channel(
+        name=f"{interaction.user.name}の個室",
+        category=category
+    )
+    
+    # タイマー開始と延長ボタンの送信
     rooms[new_channel.id] = 600
     await new_channel.send("個室へようこそ！", view=ExtendButton(new_channel))
     bot.loop.create_task(manage_room_timer(new_channel))
-    await interaction.response.send_message("個室を作成しました。", ephemeral=True)
+    
+    # コマンド実行者に通知
+    await interaction.response.send_message(f"個室を作成しました: {new_channel.mention}", ephemeral=True)
+
 
